@@ -1,0 +1,100 @@
+---
+title: "Machine Learning - Final Project"
+author: "Joseph Wong"
+date: "December 22, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Executive Summary 
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, the goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. They were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions:
+
+* Class A - exactly according to the specification
+* Class B - throwing the elbows to the front
+* Class C - lifting the dumbbell only halfway
+* Class D - lowering the dumbbell only halfway
+* Class E - throwing the hips to the front
+
+Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. This report describes how we built the model, how we used cross validation, show our expected out of sample error is, and explain why we made the choices. We will also show our prediction model to predict 20 different test cases.
+
+## Download the data
+```{r download data}
+# Load the training data and assign it to a variable and replace all missing values and #DIV/0! with "NA"
+trainData <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+
+# Load the test data and assign it to a variable and replace all missing values and #Div/0! with "NA"
+testData <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))
+
+```
+
+# Explore the data
+```{r explore data}
+head(trainData)
+head(testData)
+```
+
+# Cleanse the data
+```{r cleanse data}
+
+# Remove the irrelevant columns
+
+trainData   <-trainData[,-c(1:7)]
+testData <-testData[,-c(1:7)]
+# Remove data with NAs
+trainData <- trainData[, colSums(is.na(trainData)) == 0]
+testData <-testData[,colSums(is.na(testData)) == 0]
+```
+
+# Cross validation
+We perform training on the 75% of the given data-set and rest 25% is used for training purpose
+```{r partition data}
+require(sp,quietly=TRUE) 
+library(randomForest)
+library(caret)
+library(e1071)
+
+pTrainDataSet <- createDataPartition(trainData$classe, p=0.75, list=F)
+sampleTrainDataSet <- trainData[pTrainDataSet, ]
+validatePTrainDataSet <- trainData[-pTrainDataSet, ]
+
+
+
+
+```
+
+
+# Train the model
+```{r train model}
+control.parms <- trainControl(method="cv", 5)
+rfModel <- train(classe ~ ., data=sampleTrainDataSet, method="rf",
+                 trControl=control.parms, ntree=251)
+rfModel
+
+```
+# Out-of-sample error
+The accuracy of this modle is .9945  and the overall out-of-sample error is 1 - accuracy which equals .0086 or 1%.
+```{r out of sample error}
+rfPredict <- predict(rfModel, validatePTrainDataSet)
+confusionMatrix(validatePTrainDataSet$classe, rfPredict)
+
+```
+
+# Use prediction model to predict 20 different test cases
+```{r predict test cases}
+prdictionFor20TestCases <- predict(rfModel,testData[, -length(names(testData))])
+prdictionFor20TestCases
+```
+ 
